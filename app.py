@@ -1,10 +1,14 @@
+from cgitb import html
 import mysql.connector  # pip install mysql-connector-python
 import pickle
+from numpy import imag
+import requests
 
 from flask import Flask, render_template, request, redirect, url_for
+from bs4 import BeautifulSoup
+
 
 app = Flask(__name__)
-
 
 def connector():
     mydb = mysql.connector.connect(
@@ -62,15 +66,6 @@ def findMovies(connect, idMovies):
     result = c.fetchall()
     return result
 
-
-
-
-
-
-
-
-
-
 # The route() function of the Flask class is a decorator,
 # which tells the application which URL should call
 # the associated function.
@@ -101,13 +96,52 @@ def index():
 
         # Find the 5 selected movies in DB
         moviesSelected = findMovies(connector(), idMovies)
-        for m in moviesSelected:
-            print(">>>>>>>>>> ",m, "\n")
+        
 
-        return render_template("index.html", movies=moviesSelected)
+        film = []
+        print(type(movieSelected))
+        for detail in moviesSelected:
+            print("detail[17] :", detail[17])
+            image = findPicture(detail[17])
+            print(image)
+            details = [
+                detail[1],
+                detail[6],
+                detail[10],
+                detail[11],
+                detail[17],
+                image
+            ]
+            film.append(details)
+
+        return render_template("index.html", movies=film)
         
 
     return render_template('index.html')
+
+
+def findPicture(url):
+    headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '3600',
+    'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'
+    }
+
+    req = requests.get(url, headers)
+    soup = BeautifulSoup(req.content, 'html.parser')
+    description = soup.find("a", {"class":"ipc-lockup-overlay ipc-focusable"}).get_text()
+    image = soup.find_all('div',
+                            {'class':"ipc-media ipc-media--poster-27x40 ipc-image-media-ratio--poster-27x40 ipc-media--baseAlt ipc-media--poster-l ipc-poster__poster-image ipc-media__img"})[-1].extract()
+    child = 'src'
+
+    for child in image:
+        child
+
+    return child['src']
+
+
 
 if __name__ == "__main__": 
     app.debug = True
